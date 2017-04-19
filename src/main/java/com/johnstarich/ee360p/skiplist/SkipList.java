@@ -9,25 +9,70 @@ import java.util.Iterator;
  * Created by johnstarich on 4/12/17.
  */
 public class SkipList extends AbstractSet<Integer> {
+	class Node {
+		int key;
+		int value;
+		ArrayList<Node> forward;
+
+		public Node(int key, int value, int maxLevel) {
+			this.key = key;
+			this.value = value;
+			this.forward = new ArrayList<>(maxLevel);
+		}
+	}
+
 	Node header;
+	int currentLevels;
 	int maxLevel;
 
+	/**
+	 * Create a skip list with a maximum level.
+	 * TODO: add complexity description
+	 * @param maxLevel The maximum level for this SkipList
+	 */
 	public SkipList(int maxLevel) {
 		this.maxLevel = maxLevel;
 		header = new Node(0xdead, 0xdead, maxLevel);
 		header.key = Integer.MAX_VALUE;
-		for(int i = 0; i < maxLevel; i += 1) {
+		for (int i = 0; i < maxLevel; i += 1) {
 			header.forward.set(i, header);
 		}
 	}
 
-	public void add(int value) {
+	public boolean add(int value) {
+		return insert(value, value);
 	}
 
-	public void delete(int value) {
+	private boolean insert(int searchKey, int value) {
+		ArrayList<Node> update = new ArrayList<>();
+		Node current = this.header;
+		for (int level = current.forward.size(); level >= 0; level--) {
+			while (current.forward.get(level).key < searchKey) {
+				current = current.forward.get(level);
+			}
+			update.add(current);
+		}
+		return false; // TODO
 	}
 
-	public void search(int value) {
+	public void remove(int value, int key) {
+	}
+
+	/**
+	 * Returns true if this set contains the specified element.
+	 * @param searchKey the value to find in this SkipList
+	 */
+	public boolean contains(int searchKey) {
+		Node current = this.header;
+
+		for (int level = current.forward.size(); level >= 0; level--) {
+			while (current.forward.get(level).key < searchKey) {
+				current = current.forward.get(level);
+			}
+		}
+	
+		int limit = current.forward.get(1).value;
+		return limit == searchKey;
 	}
 
 	public int size() {
@@ -36,17 +81,5 @@ public class SkipList extends AbstractSet<Integer> {
 
 	public Iterator<Integer> iterator() {
 		return null;
-	}
-}
-
-class Node {
-	int key;
-	int value;
-	ArrayList<Node> forward;
-
-	public Node(int key, int value, int maxLevel) {
-		this.key = key;
-		this.value = value;
-		this.forward = new ArrayList<>(maxLevel);
 	}
 }
