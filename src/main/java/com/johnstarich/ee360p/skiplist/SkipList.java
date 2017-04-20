@@ -21,6 +21,7 @@ public class SkipList extends AbstractSet<Integer> {
 			this.value = value;
 			this.level = level;
 			this.forward = new ArrayList<>(maxLevel);
+
 			for (int i = 0; i < maxLevel; i += 1) {
 				this.forward.add(null);
 			}
@@ -43,6 +44,8 @@ public class SkipList extends AbstractSet<Integer> {
 	 * @param maxLevel The maximum level for this SkipList
 	 */
 	public SkipList(int maxLevel) {
+		this.currentLevels = 0;
+		this.size = 0;
 		this.maxLevel = maxLevel;
 		header = new Node(Integer.MAX_VALUE, Integer.MAX_VALUE, 0, maxLevel);
 		for (int i = 0; i < maxLevel; i += 1) {
@@ -76,7 +79,7 @@ public class SkipList extends AbstractSet<Integer> {
 			if (newLevel > currentLevels) {
 				newLevel = currentLevels + 1;
 				currentLevels = newLevel;
-				update.set(newLevel, header);
+				update.add(header);
 			}
 
 			Node newNode = new Node(searchKey, value, newLevel, maxLevel);
@@ -114,8 +117,8 @@ public class SkipList extends AbstractSet<Integer> {
 					break;
 				}
 				update.get(level).forward.set(level, current.forward.get(level));
-				size--;
 			}
+			size--;
 			current = null;
 
 			while (currentLevels > 0 && header.forward.get(currentLevels).equals(header)) {
@@ -141,7 +144,7 @@ public class SkipList extends AbstractSet<Integer> {
 			}
 		}
 
-		int limit = current.forward.get(1).value;
+		int limit = current.forward.get(0).value;
 		return limit == searchKey;
 	}
 
@@ -149,7 +152,7 @@ public class SkipList extends AbstractSet<Integer> {
 
 	private int chooseRandomLevel() {
 		int newLevel = 0;
-		while (newLevel < maxLevel && levelRandom.nextFloat() < this.p) {
+		while (newLevel < maxLevel - 1 && levelRandom.nextFloat() < this.p) {
 			newLevel += 1;
 		}
 		return newLevel;
@@ -159,7 +162,37 @@ public class SkipList extends AbstractSet<Integer> {
 		return size;
 	}
 
+	/** Returns an iterator over the elements in this list in proper sequence. */
 	public Iterator<Integer> iterator() {
-		return null;
+		return new Iterator<Integer>() {
+			private Node current = header.forward.get(0);
+
+			@Override
+			public boolean hasNext() {
+				return current.key != Integer.MAX_VALUE;
+			}
+
+			@Override
+			public Integer next() {
+				Integer value = current.value;
+				current = current.forward.get(0);
+				return value;
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+
+	/** Returns a string representation of the object. */
+	public String toString() {
+		StringBuilder s = new StringBuilder("[");
+		for (Integer i : this) {
+			s.append(i).append(", ");
+		}
+		s.append(']');
+		return s.toString();
 	}
 }
