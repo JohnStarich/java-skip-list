@@ -9,6 +9,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class JavaConcurrentSkipListSetTest {
 
@@ -22,6 +23,7 @@ public class JavaConcurrentSkipListSetTest {
     private Map<String, List<Long>> bench(List<Integer> rounds, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
+        sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for(Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
@@ -43,6 +45,7 @@ public class JavaConcurrentSkipListSetTest {
     private Map<String, List<Long>> benchConcurrent(List<Integer> rounds, long nodes, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
+        sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for(Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
@@ -85,6 +88,8 @@ public class JavaConcurrentSkipListSetTest {
                     System.out.print("\t" + entry.getValue().get(i));
                 }
                 System.out.println();
+
+                assertFalse(entry.getValue().parallelStream().anyMatch(a -> a < 0));
             }
         }
 
@@ -103,6 +108,8 @@ public class JavaConcurrentSkipListSetTest {
                         System.out.print("\t" + entry.getValue().get(i));
                     }
                     System.out.println();
+
+                    assertFalse(entry.getValue().parallelStream().anyMatch(a -> a < 0));
                 }
             }
         }
