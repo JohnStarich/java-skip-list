@@ -60,7 +60,7 @@ public class SkipList extends AbstractSet<Integer> {
 
 	private boolean insert(int searchKey, int value) {
 		ArrayList<Node> update = new ArrayList<>();
-		for(int i = 0; i <= currentLevels; i += 1) {
+		for (int i = 0; i <= currentLevels; i += 1) {
 			update.add(null);
 		}
 		Node current = this.header;
