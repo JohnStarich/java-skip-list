@@ -2,9 +2,15 @@ package com.johnstarich.ee360p.skiplist;
 
 import org.junit.Test;
 
-import java.util.*;
+import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -26,13 +32,14 @@ public class JavaConcurrentSkipListSetTest {
         sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
-        for(Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
+        for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
             results.put(entry.getKey(), new ArrayList<>());
-            for(int round: rounds) {
+            for (int round: rounds) {
                 try {
                     long res = br.bench(sets.get(entry.getKey()), round);
                     results.get(entry.getKey()).add(res);
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     e.printStackTrace();
                     results.get(entry.getKey()).add(-1L);
                 }
@@ -42,28 +49,30 @@ public class JavaConcurrentSkipListSetTest {
         return results;
     }
 
-    private Map<String, List<Long>> benchConcurrent(List<Integer> rounds, long nodes, BenchRunner br) {
+    private Map<String, List<Long>> benchConcurrent(List<Integer> rounds,
+                                                    long nodes, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
         sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
-        for(Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
+        for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
             results.put(entry.getKey(), new ArrayList<>());
-            for(int round: rounds) {
-                long resultStream[] = LongStream.range(0L,nodes).parallel().map(n -> {
+            for (int round: rounds) {
+                long[] resultStream = LongStream.range(0L,nodes).parallel().map(n -> {
                     try {
-                        return br.bench(sets.get(entry.getKey()), (int)(round/nodes));
-                    } catch (Exception e) {
+                        return br.bench(sets.get(entry.getKey()), (int)(round / nodes));
+                    }
+                    catch (Exception e) {
                         e.printStackTrace();
                         return -1;
                     }
                 }).toArray();
 
                 long sum = 0;
-                for(long n: resultStream) {
+                for (long n: resultStream) {
                     sum += n;
-                    if(n == -1L) {
+                    if (n == -1L) {
                         results.get(entry.getKey()).add(-1L);
                     }
                 }
@@ -76,15 +85,15 @@ public class JavaConcurrentSkipListSetTest {
 
     private void benchRunner(String name, int n, BenchRunner br) {
         System.out.println("\n\nStarting " + name + " Benchmark Sync");
-        for(int number = 0; number < 10; number++) {
+        for (int number = 0; number < 10; number++) {
             List<Integer> rounds = new ArrayList<>();
-            for(int i = 0; i < n; i ++) {
+            for (int i = 0; i < n; i ++) {
                 rounds.add((int)Math.pow(2, i));
             }
 
-            for(Map.Entry<String, List<Long>> entry: bench(rounds, br).entrySet()) {
+            for (Map.Entry<String, List<Long>> entry: bench(rounds, br).entrySet()) {
                 System.out.print(entry.getKey() + " " + number);
-                for(int i = 0; i < entry.getValue().size(); i++) {
+                for (int i = 0; i < entry.getValue().size(); i++) {
                     System.out.print("\t" + entry.getValue().get(i));
                 }
                 System.out.println();
@@ -96,15 +105,16 @@ public class JavaConcurrentSkipListSetTest {
         for (int nodes = 0; nodes < 4; nodes++) {
             long powNodes = (long)Math.pow(2, nodes);
             System.out.println("\n\nStarting " + name + " Benchmark Concurrent " + powNodes);
-            for(int number = 0; number < 10; number++) {
+            for (int number = 0; number < 10; number++) {
                 List<Integer> rounds = new ArrayList<>();
-                for(int i = 0; i < n; i ++) {
+                for (int i = 0; i < n; i ++) {
                     rounds.add((int)Math.pow(2, i));
                 }
 
-                for(Map.Entry<String, List<Long>> entry: benchConcurrent(rounds, powNodes, br).entrySet()) {
+                for (Map.Entry<String,
+                        List<Long>> entry: benchConcurrent(rounds, powNodes, br).entrySet()) {
                     System.out.print(entry.getKey() + " " + number);
-                    for(int i = 0; i < entry.getValue().size(); i++) {
+                    for (int i = 0; i < entry.getValue().size(); i++) {
                         System.out.print("\t" + entry.getValue().get(i));
                     }
                     System.out.println();
@@ -125,63 +135,63 @@ public class JavaConcurrentSkipListSetTest {
     }
 
     @Test
-    public void InsertTimingBenchmarkTest() throws Exception {
-        BenchRunner insertBR = (list, rounds) -> {
+    public void insertTimingBenchmarkTest() throws Exception {
+        BenchRunner insulter = (list, rounds) -> {
             long time = System.nanoTime();
 
-            for(int i = 0; i < rounds; i++) {
+            for (int i = 0; i < rounds; i++) {
                 list.add(i);
             }
 
             return System.nanoTime() - time;
         };
 
-        benchRunner("Insert", 20, insertBR);
+        benchRunner("Insert", 20, insulter);
     }
 
     @Test
-    public void RemoveHeadTimingBenchmarkTest() throws Exception {
-        BenchRunner insertBR = (list, rounds) -> {
-            for(int i = 0; i < rounds; i++) {
+    public void removeHeadTimingBenchmarkTest() throws Exception {
+        BenchRunner remover = (list, rounds) -> {
+            for (int i = 0; i < rounds; i++) {
                 list.add(i);
             }
 
             long time = System.nanoTime();
 
-            for(int i = 0; i < rounds; i++) {
+            for (int i = 0; i < rounds; i++) {
                 list.remove(i);
             }
 
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveHead", 20, insertBR);
+        benchRunner("RemoveHead", 20, remover);
     }
 
     @Test
-    public void RemoveTailTimingBenchmarkTest() throws Exception {
-        BenchRunner insertBR = (list, rounds) -> {
-            for(int i = 0; i < rounds; i++) {
+    public void removeTailTimingBenchmarkTest() throws Exception {
+        BenchRunner remover = (list, rounds) -> {
+            for (int i = 0; i < rounds; i++) {
                 list.add(i);
             }
 
             long time = System.nanoTime();
 
-            for(int i = 0; i < rounds; i++) {
+            for (int i = 0; i < rounds; i++) {
                 list.remove((int)rounds - 1 - i);
             }
 
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveTail", 20, insertBR);
+        benchRunner("RemoveTail", 20, remover);
     }
 
 
     @Test
-    public void RemoveRandomTimingBenchmarkTest() throws Exception {
-        BenchRunner insertBR = (list, rounds) -> {
-            for(int i = 0; i < rounds; i++) {
+    public void removeRandomTimingBenchmarkTest() throws Exception {
+        BenchRunner remover = (list, rounds) -> {
+            for (int i = 0; i < rounds; i++) {
                 list.add(i);
             }
 
@@ -198,14 +208,14 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveRandom", 20, insertBR);
+        benchRunner("RemoveRandom", 20, remover);
     }
 
 
     @Test
-    public void ContainsRandomTimingBenchmarkTest() throws Exception {
-        BenchRunner insertBR = (list, rounds) -> {
-            for(int i = 0; i < rounds; i++) {
+    public void containsRandomTimingBenchmarkTest() throws Exception {
+        BenchRunner container = (list, rounds) -> {
+            for (int i = 0; i < rounds; i++) {
                 list.add(i);
             }
 
@@ -222,11 +232,6 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("ContainsRandom", 20, insertBR);
+        benchRunner("ContainsRandom", 20, container);
     }
-}
-
-@FunctionalInterface
-interface BenchRunner {
-    long bench(AbstractSet<Integer> list, int rounds) throws Exception;
 }
