@@ -53,7 +53,8 @@ public class SkipList extends AbstractSet<Integer> {
 		}
 	}
 
-	public boolean add(int value) {
+	@Override
+	public boolean add(Integer value) {
 		return insert(value, value);
 	}
 
@@ -94,12 +95,12 @@ public class SkipList extends AbstractSet<Integer> {
 		}
 	}
 
-	/**
-	 * Removes a single instance of the specified element from this collection, if it is
-	 * present (optional operation).
-	 * @param searchKey element to remove
-	 */
-	public boolean remove(int searchKey) {
+	@Override
+	public boolean remove(Object value) {
+		if (! (value instanceof Integer)) {
+			return false;
+		}
+		int searchKey = (Integer)value;
 		ArrayList<Node> update = new ArrayList<>();
 		Node current = this.header;
 		for (int level = currentLevels; level >= 0; level--) {
@@ -131,11 +132,12 @@ public class SkipList extends AbstractSet<Integer> {
 		return false;
 	}
 
-	/**
-	 * Returns true if this set contains the specified element.
-	 * @param searchKey the value to find in this SkipList
-	 */
-	public boolean contains(int searchKey) {
+	@Override
+	public boolean contains(Object value) {
+		if (! (value instanceof Integer)) {
+			return false;
+		}
+		int searchKey = (Integer)value;
 		Node current = this.header;
 
 		for (int level = currentLevels; level >= 0; level--) {
@@ -162,7 +164,7 @@ public class SkipList extends AbstractSet<Integer> {
 		return size;
 	}
 
-	/** Returns an iterator over the elements in this list in proper sequence. */
+	@Override
 	public Iterator<Integer> iterator() {
 		return new Iterator<Integer>() {
 			private Node current = header.forward.get(0);
@@ -186,7 +188,7 @@ public class SkipList extends AbstractSet<Integer> {
 		};
 	}
 
-	/** Returns a string representation of the object. */
+	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder("[");
 		for (Integer i : this) {
