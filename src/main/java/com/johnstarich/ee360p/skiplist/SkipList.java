@@ -84,7 +84,7 @@ public class SkipList extends AbstractSet<Integer> {
 
 			Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 
-			for (int level = 0; level <= newLevel; level++) {
+			for (int level = 0; level <= currentLevels; level++) {
 				newNode.forward.set(level, update.get(level).forward.get(level));
 				update.get(level).forward.set(level, newNode);
 			}
