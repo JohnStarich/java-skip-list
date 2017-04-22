@@ -4,8 +4,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -14,6 +16,7 @@ import static org.junit.Assert.*;
  * Created by johnstarich on 4/12/17.
  */
 public class SkipListEdgeTest {
+	@Rule public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 	@Rule public TestName testName = new TestName();
 
 	@Before

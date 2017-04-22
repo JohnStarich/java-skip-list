@@ -24,7 +24,7 @@ public class SkipList extends AbstractSet<Integer> {
 			this.value = value;
 			this.level = level;
 			this.forward = new Node[maxLevel];
-			this.fullyLinked = true;
+			this.fullyLinked = false;
 		}
 
 		public String toString() {
@@ -59,43 +59,50 @@ public class SkipList extends AbstractSet<Integer> {
 	}
 
 	private boolean insert(int searchKey, int value) {
-        while (true) {
+		while (true) {
 			Node[] update = new Node[maxLevel];
-            Node current = this.header;
-            for (int level = currentLevels; level >= 0; level--) {
+			Node current = this.header;
+			for (int level = currentLevels; level >= 0; level--) {
 				while (current.forward[level].key < searchKey) {
 					current = current.forward[level];
 				}
 				update[level] = current;
-            }
+				current.fullyLinked = false;
+			}
 
-            current = current.forward[0];
+			current = current.forward[0];
 
-            if (current.key == searchKey && !current.markedForRemoval) {
-                while (!current.fullyLinked);
-                return false;
-            }
-            else {
-                int newLevel = chooseRandomLevel();
+			if (current.key == searchKey && !current.markedForRemoval) {
+				while (!current.fullyLinked);
+				return false;
+			}
+			else {
+				int newLevel = chooseRandomLevel();
 
-                if (newLevel > currentLevels) {
-                    newLevel = currentLevels + 1;
-                    currentLevels = newLevel;
-                    update[newLevel] = header;
-                }
+				if (newLevel > currentLevels) {
+					newLevel = currentLevels + 1;
+					currentLevels = newLevel;
+					update[newLevel] = header;
+				}
 
-                Node newNode = new Node(searchKey, value, newLevel, maxLevel);
+				Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 
-                for (int level = 0; level <= currentLevels; level++) {
-                    newNode.forward[level] = update[level].forward[level];
-                    update[level].forward[level] = newNode;
-                }
-                size++;
+				for (int level = 0; level <= currentLevels; level++) {
+					newNode.forward[level] = update[level].forward[level];
+					update[level].forward[level] = newNode;
+				}
 
-                return true;
-            }
-        }
-    }
+				for (int level = 0; level <= currentLevels; level++) {
+					update[level].fullyLinked = true;
+				}
+				newNode.fullyLinked = true;
+
+				size++;
+
+				return true;
+			}
+		}
+	}
 
 	@Override
 	public boolean remove(Object value) {
