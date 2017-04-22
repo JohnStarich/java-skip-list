@@ -11,6 +11,6 @@ import static org.junit.Assert.assertNotNull;
 public class SkipListTest {
     @Test
     public void construct() {
-        assertNotNull(new SkipList());
+        assertNotNull(new SkipList(0));
     }
 }
