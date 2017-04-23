@@ -12,6 +12,7 @@ pandoc --read=markdown_github \
     -V margin-right=1in \
     -V margin-top=1in \
     -V margin-down=1in \
+    --include-in-header header.tex \
     -f "markdown+tex_math_single_backslash+escaped_line_breaks" \
     -o report.pdf
 
