@@ -28,7 +28,7 @@ public class SkipListFunctionalTests {
         }
     }
     private SkipList createSkipList(int entries){
-        int numLevels = 1;
+        int numLevels = 3;
         SkipList skipList = new SkipList(numLevels);
         for(int i = 0; i < entries; i++){
             while(!skipList.add(rand.nextInt()));
@@ -106,6 +106,23 @@ public class SkipListFunctionalTests {
         for(int i = 0; i < defaultEntries; i++){
             while(!skipList.add(rand.nextInt()));
             assertTrue(orderInvariant(skipList));
+        }
+    }
+
+    @Test
+    public void addEqualTest(){
+        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
+        boolean addResult;
+        Integer toAdd;
+
+        for(int i = 0; i < defaultEntries; i++){
+            do{
+                toAdd = rand.nextInt();
+                addResult = benchmark.add(toAdd);
+                skipList.add(toAdd);
+            }while(!addResult);
+            assertEquals(skipList.toString(), benchmark.toString());
         }
     }
 
@@ -239,10 +256,24 @@ public class SkipListFunctionalTests {
 
         int size = skipList.size();
         for(int i = 0; i < size; i++){
-            if(skipList.remove((Integer)benchmarkArr[i])) {
-                size--;
-            }
-            assertEquals(skipList.size(),size);
+            skipList.remove(benchmarkArr[i]);
+            assertTrue(orderInvariant(skipList));
+        }
+    }
+
+    @Test
+    public void removeEqualTest(){
+        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
+        makeEqualLists(skipList,benchmark);
+        Object[] benchmarkArr = benchmark.toArray();
+        Collections.shuffle(Arrays.asList(benchmarkArr));
+
+        int size = skipList.size();
+        for(int i = 0; i < size; i++){
+            skipList.remove(benchmarkArr[i]);
+            benchmark.remove(benchmarkArr[i]);
+            assertEquals(skipList.toString(),benchmark.toString());
         }
     }
 
