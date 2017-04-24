@@ -69,6 +69,8 @@ locks on the node, or the node/layer pair.
 
 {{Atomic -- John}}
 
+#### Fine-grained
+
 To ensure the layers of the skip-list are sublists of lower layer lists,
 modifications to the skip-list should only occur once all locks are obtained for
 nodes needing modification. As a result of the internally layered structure of a
