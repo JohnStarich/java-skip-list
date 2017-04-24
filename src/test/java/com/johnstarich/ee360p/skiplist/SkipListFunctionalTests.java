@@ -17,9 +17,10 @@ import static org.junit.Assert.*;
  */
 
 /*apparent bugs
-    remove does not produce correct return value for iterator, toString, contains, add, or a second remove
+    remove does not cause change in iterator or toString
     toString has extra , on last element
-    hanging
+    contains, add, and remove need to consider null input
+    sometimes hanging in parallel operations
  */
 public class SkipListFunctionalTests {
 
