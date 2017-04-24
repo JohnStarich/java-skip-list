@@ -3,8 +3,8 @@ package com.johnstarich.ee360p.skiplist;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A fine-grained and lock-free skip-list implementation.
@@ -17,17 +17,19 @@ public class SkipList extends AbstractSet<Integer> {
 		int level;
 		Node[] forward;
 
-		AtomicBoolean fullyLinked;
-		AtomicBoolean markedForRemoval;
+	    ReentrantLock lock;	
+        boolean fullyLinked;
+		boolean markedForRemoval;
 
 		public Node(int key, int value, int level, int maxLevel) {
 			this.key = key;
 			this.value = value;
 			this.level = level;
 			this.forward = new Node[maxLevel];
-			this.fullyLinked = new AtomicBoolean(false);
-			this.markedForRemoval = new AtomicBoolean(false);
-		}
+			this.fullyLinked = true; 
+			this.markedForRemoval = false;
+		    this.lock = new ReentrantLock();
+        }
 
 		public String toString() {
 			return Integer.toString(value);
@@ -61,118 +63,212 @@ public class SkipList extends AbstractSet<Integer> {
 	}
 
 	private boolean insert(int searchKey, int value) {
-		Node[] update = new Node[maxLevel];
-		Node current = this.header;
-		int levels = currentLevels.get();
-		for (int level = levels; level >= 0; level--) {
-			while (current.forward[level].key < searchKey) {
-				current = current.forward[level];
-			}
-			update[level] = current;
-			current.fullyLinked.compareAndSet(true, false);
-		}
+        Node[] predecessors = new Node[maxLevel];
+        Node[] successors = new Node[maxLevel];
 
-		current = current.forward[0];
+        int foundNodeLevel = find(searchKey, predecessors, successors);
 
-		if (current.key == searchKey && !current.markedForRemoval.get()) {
-			while (!current.fullyLinked.get());
-			return false;
-		}
-		else {
-			int newLevel = chooseRandomLevel();
+        if (foundNodeLevel != -1) {
+            Node foundNode = successors[foundNodeLevel];
+            if (!foundNode.markedForRemoval) {
+                while (!foundNode.fullyLinked);
+                return false;
+            }
+        }
+        
+        int levels = currentLevels.get();
+        int newLevel = chooseRandomLevel();
 
-			if (newLevel > currentLevels.get()) {
-				newLevel = currentLevels.incrementAndGet();
-				levels = newLevel;
-				update[newLevel] = header;
-			}
+        if (newLevel > levels) {
+            newLevel = currentLevels.incrementAndGet();
+            levels = newLevel;
+        }
+        
+        int highestLockedLevel = -1;
+        
+        try {            
+            boolean valid = true;
+            Node predecessor;
+            Node successor;
+            Node previousPredecessor = null;
+            
+            for (int level = 0; (valid && (level <= newLevel)); level += 1) {
+                predecessor = predecessors[level];
+                successor = successors[level];
 
-			Node newNode = new Node(searchKey, value, newLevel, maxLevel);
+                if (predecessor != previousPredecessor) {
+                    predecessor.lock.lock();
+                    highestLockedLevel = level;
+                    previousPredecessor = predecessor;
+                }
 
-			for (int level = 0; level <= levels; level++) {
-				newNode.forward[level] = update[level].forward[level];
-				update[level].forward[level] = newNode;
-			}
+                valid = !predecessor.markedForRemoval
+                        && !successor.markedForRemoval
+                        && predecessor.forward[level] == successor;
+            }
+               
+            if (!valid) {
+                return false; 
+            }
 
-			for (int level = 0; level <= levels; level++) {
-				update[level].fullyLinked.compareAndSet(false, true);
-			}
-			newNode.fullyLinked.compareAndSet(false, true);
+            Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 
-			size.incrementAndGet();
+            for (int level = 0; level <= newLevel; level += 1) {
+                newNode.forward[level] = successors[level];
+                predecessors[level].forward[level] = newNode;
+            }
 
-			return true;
-		}
-	}
+            newNode.fullyLinked = true;
+            size.incrementAndGet();
+            
+            return true;                
+        }            
+        finally {
+            for (int level = 0; level <= highestLockedLevel; level += 1) {
+                if (predecessors[level].lock.isHeldByCurrentThread()) {
+                    predecessors[level].lock.unlock();
+                }
+            }
+        }
+    }
 
 	@Override
 	public boolean remove(Object value) {
-		if (! (value instanceof Integer)) {
-			return false;
-		}
-		int searchKey = (Integer)value;
-		Node[] update = new Node[maxLevel];
-		Node current = this.header;
-		for (int level = currentLevels.get(); level >= 0; level--) {
-			while (current.forward[level].key < searchKey) {
-				current = current.forward[level];
-			}
-			update[level] = current;
-			current.fullyLinked.compareAndSet(true, false);
-		}
+	    if (! (value instanceof Integer)) {
+            return false;
+        } 
+        
+        Node[] predecessors = new Node[maxLevel];
+        Node[] successors = new Node[maxLevel];
+        Node nodeToRemove = null;
+        boolean inProcessOfRemoving = false; 
+        int highestLevelFound = -1;
 
-		current = current.forward[0];
+        
+        int foundNodeLevel = find(value, predecessors, successors);
 
-		if (current.key == searchKey && !current.markedForRemoval.get()) {
-			current.markedForRemoval.compareAndSet(false, true);
-			int levels = currentLevels.get();
-			for (int level = 0; level < levels; level++) {
-				if (update[level].forward[level] != current) {
-					break;
-				}
-				if (update[level].markedForRemoval.get()) {
-					continue;
-				}
-				update[level].forward[level] = current.forward[level];
-			}
+        if (inProcessOfRemoving
+            || foundNodeLevel != -1 
+            && canDelete(successors[foundNodeLevel], foundNodeLevel)) {
+            
+            if (!inProcessOfRemoving) {                    
+                nodeToRemove = successors[foundNodeLevel];
+                highestLevelFound = nodeToRemove.level; 
+                nodeToRemove.lock.lock();
+                
+                if (nodeToRemove.markedForRemoval) {
+                    nodeToRemove.lock.unlock();
+                    return false;
+                }     
+                
+                nodeToRemove.markedForRemoval = true;
+                inProcessOfRemoving = true;
+            }
+        
+            int highestLockedLevel = -1;
+            
+            try {
+                boolean valid = true;
+                Node predecessor;
+                Node successor;
+                Node previousPredecessor = null;
+                
+                for (int level = 0; (valid && (level <= highestLevelFound)); level += 1) {
+                    predecessor = predecessors[level];
+                    successor = successors[level];
 
-			size.decrementAndGet();
+                    if (predecessor != previousPredecessor) {
+                        predecessor.lock.lock();
+                        highestLockedLevel = level;
+                        previousPredecessor = predecessor;
+                    }
 
-			current = null;
+                    valid = !predecessor.markedForRemoval
+                            && predecessor.forward[level] == successor;
+                }
+            
+                if (!valid) {
+                    return false; 
+                }
 
-			while (levels > 0 && header.forward[levels].equals(header)) {
-				levels = currentLevels.decrementAndGet();	
-			}
+                for (int level = highestLevelFound; level >= 0; level -= 1) {
+                    predecessors[level].forward[level] = nodeToRemove.forward[level];
+                }                
 
-			for (int level = 0; level < levels; level++) {
-				update[level].fullyLinked.compareAndSet(false, true);
-			}
+                nodeToRemove.lock.unlock();
+                size.decrementAndGet();
 
-			return true;
-		}
+                return true;                    
+            } 
+            finally {
+                for (int level = 0; level <= highestLockedLevel; level += 1) {
+                    if (predecessors[level].lock.isHeldByCurrentThread()) { 
+                        predecessors[level].lock.unlock();
+                    }
+                }
+            }             
+        }
+        else {
+            return false;
+        } 
+        
+    }
 
-		return false;
-	}
-
-	@Override
+	/**
+	 * Determines if node was found at the highest level, not marked for removal, and fully linked. 
+	 * TODO: add complexity description
+	 */
+	public boolean canDelete(Node node, int highestLevelFound) {
+        return !node.markedForRemoval 
+               && node.fullyLinked 
+               && node.level == highestLevelFound;
+    }
+    
+    @Override
 	public boolean contains(Object value) {
-		if (! (value instanceof Integer)) {
-			return false;
-		}
-		int searchKey = (Integer)value;
-		Node current = this.header;
+	    Node[] predecessors = new Node[maxLevel];
+        Node[] successors = new Node[maxLevel];
 
-		for (int level = currentLevels.get(); level >= 0; level--) {
-			while (current.forward[level].key < searchKey) {
-				current = current.forward[level];
-			}
-		}
+        int foundNodeLevel = find(value, predecessors, successors); 
 
-		int limit = current.forward[0].value;
-		return limit == searchKey && current.fullyLinked.get() && !current.markedForRemoval.get();
-	}
+        return foundNodeLevel != -1
+               && successors[foundNodeLevel].fullyLinked
+               && !successors[foundNodeLevel].markedForRemoval;
+    }
 
-	private Random levelRandom = new Random(0);
+	/**
+	 * Finds "value" in the skiplist, returning highest level of occurrence or -1 if absent.
+	 * TODO: add complexity description
+	 */
+	public int find(Object value, Node[] predecessors, Node[] successors) {
+        if (! (value instanceof Integer)) {
+            return -1; 
+        }
+
+        int highestLevel = -1;
+        int searchKey = (Integer) value;
+        Node predecessor = this.header;
+
+        for (int level = maxLevel - 1; level >= 0; level -= 1) {
+            Node current = predecessor.forward[level];
+            
+            while (current.key < searchKey) {
+                predecessor = current;
+                current = predecessor.forward[level];
+            }
+
+            if (highestLevel == -1 && current.key == searchKey) {
+                highestLevel = level;
+            }
+
+            predecessors[level] = predecessor;
+            successors[level] = current;
+        }             
+       
+        return highestLevel;
+    }
+
+    private Random levelRandom = new Random(0);
 
 	private int chooseRandomLevel() {
 		int newLevel = 0;
