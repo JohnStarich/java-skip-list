@@ -66,67 +66,71 @@ public class SkipList extends AbstractSet<Integer> {
         Node[] predecessors = new Node[maxLevel];
         Node[] successors = new Node[maxLevel];
 
-        int foundNodeLevel = find(searchKey, predecessors, successors);
+        while (true) {
+            int foundNodeLevel = find(searchKey, predecessors, successors);
 
-        if (foundNodeLevel != -1) {
-            Node foundNode = successors[foundNodeLevel];
-            if (!foundNode.markedForRemoval) {
-                while (!foundNode.fullyLinked);
-                return false;
+            if (foundNodeLevel != -1) {
+                Node foundNode = successors[foundNodeLevel];
+                if (!foundNode.markedForRemoval) {
+                    while (!foundNode.fullyLinked) {
+                        System.out.println("Waiting for found node to be fully linked.");
+                    }
+                    return false;
+                }
             }
-        }
-        
-        int levels = currentLevels.get();
-        int newLevel = chooseRandomLevel();
-
-        if (newLevel > levels) {
-            newLevel = currentLevels.incrementAndGet();
-            levels = newLevel;
-        }
-        
-        int highestLockedLevel = -1;
-        
-        try {            
-            boolean valid = true;
-            Node predecessor;
-            Node successor;
-            Node previousPredecessor = null;
             
-            for (int level = 0; (valid && (level <= newLevel)); level += 1) {
-                predecessor = predecessors[level];
-                successor = successors[level];
+            int levels = currentLevels.get();
+            int newLevel = chooseRandomLevel();
 
-                if (predecessor != previousPredecessor) {
-                    predecessor.lock.lock();
-                    highestLockedLevel = level;
-                    previousPredecessor = predecessor;
+            if (newLevel > levels) {
+                newLevel = currentLevels.incrementAndGet();
+                levels = newLevel;
+            }
+            
+            int highestLockedLevel = -1;
+            
+            try {            
+                boolean valid = true;
+                Node predecessor;
+                Node successor;
+                Node previousPredecessor = null;
+                
+                for (int level = 0; (valid && (level <= newLevel)); level += 1) {
+                    predecessor = predecessors[level];
+                    successor = successors[level];
+
+                    if (predecessor != previousPredecessor) {
+                        predecessor.lock.lock();
+                        highestLockedLevel = level;
+                        previousPredecessor = predecessor;
+                    }
+
+                    valid = !predecessor.markedForRemoval
+                            && !successor.markedForRemoval
+                            && predecessor.forward[level] == successor;
+                }
+                   
+                if (!valid) {
+                    continue; 
                 }
 
-                valid = !predecessor.markedForRemoval
-                        && !successor.markedForRemoval
-                        && predecessor.forward[level] == successor;
-            }
-               
-            if (!valid) {
-                return false; 
-            }
+                Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 
-            Node newNode = new Node(searchKey, value, newLevel, maxLevel);
+                for (int level = 0; level <= newLevel; level += 1) {
+                    newNode.forward[level] = successors[level];
+                    predecessors[level].forward[level] = newNode;
+                }
 
-            for (int level = 0; level <= newLevel; level += 1) {
-                newNode.forward[level] = successors[level];
-                predecessors[level].forward[level] = newNode;
-            }
-
-            newNode.fullyLinked = true;
-            size.incrementAndGet();
-            
-            return true;                
-        }            
-        finally {
-            for (int level = 0; level <= highestLockedLevel; level += 1) {
-                if (predecessors[level].lock.isHeldByCurrentThread()) {
-                    predecessors[level].lock.unlock();
+                newNode.fullyLinked = true;
+                size.incrementAndGet();
+                
+                return true;                
+            }            
+            finally {
+                for (int level = 0; level <= highestLockedLevel; level += 1) {
+                    if (predecessors[level].lock.isHeldByCurrentThread()) {
+                        predecessors[level].lock.unlock();
+                    }
                 }
             }
         }
@@ -144,74 +148,74 @@ public class SkipList extends AbstractSet<Integer> {
         boolean inProcessOfRemoving = false; 
         int highestLevelFound = -1;
 
-        
-        int foundNodeLevel = find(value, predecessors, successors);
+        while (true) { 
+            int foundNodeLevel = find(value, predecessors, successors);
 
-        if (inProcessOfRemoving
-            || foundNodeLevel != -1 
-            && canDelete(successors[foundNodeLevel], foundNodeLevel)) {
-            
-            if (!inProcessOfRemoving) {                    
-                nodeToRemove = successors[foundNodeLevel];
-                highestLevelFound = nodeToRemove.level; 
-                nodeToRemove.lock.lock();
+            if (inProcessOfRemoving
+                || (foundNodeLevel != -1 
+                && canDelete(successors[foundNodeLevel], foundNodeLevel))) {
                 
-                if (nodeToRemove.markedForRemoval) {
+                if (!inProcessOfRemoving) {                    
+                    nodeToRemove = successors[foundNodeLevel];
+                    highestLevelFound = nodeToRemove.level; 
+                    nodeToRemove.lock.lock();
+                    
+                    if (nodeToRemove.markedForRemoval) {
+                        nodeToRemove.lock.unlock();
+                        return false;
+                    }     
+                    
+                    nodeToRemove.markedForRemoval = true;
+                    inProcessOfRemoving = true;
+                }
+            
+                int highestLockedLevel = -1;
+                
+                try {
+                    boolean valid = true;
+                    Node predecessor;
+                    Node successor;
+                    Node previousPredecessor = null;
+                    
+                    for (int level = 0; (valid && (level <= highestLevelFound)); level += 1) {
+                        predecessor = predecessors[level];
+                        successor = successors[level];
+
+                        if (predecessor != previousPredecessor) {
+                            predecessor.lock.lock();
+                            highestLockedLevel = level;
+                            previousPredecessor = predecessor;
+                        }
+
+                        valid = !predecessor.markedForRemoval
+                                && predecessor.forward[level] == successor;
+                    }
+                
+                    if (!valid) {
+                        continue; 
+                    }
+
+                    for (int level = highestLevelFound; level >= 0; level -= 1) {
+                        predecessors[level].forward[level] = nodeToRemove.forward[level];
+                    }                
+
                     nodeToRemove.lock.unlock();
-                    return false;
-                }     
-                
-                nodeToRemove.markedForRemoval = true;
-                inProcessOfRemoving = true;
+                    size.decrementAndGet();
+
+                    return true;                    
+                } 
+                finally {
+                    for (int level = 0; level <= highestLockedLevel; level += 1) {
+                        if (predecessors[level].lock.isHeldByCurrentThread()) { 
+                            predecessors[level].lock.unlock();
+                        }
+                    }
+                }             
             }
-        
-            int highestLockedLevel = -1;
-            
-            try {
-                boolean valid = true;
-                Node predecessor;
-                Node successor;
-                Node previousPredecessor = null;
-                
-                for (int level = 0; (valid && (level <= highestLevelFound)); level += 1) {
-                    predecessor = predecessors[level];
-                    successor = successors[level];
-
-                    if (predecessor != previousPredecessor) {
-                        predecessor.lock.lock();
-                        highestLockedLevel = level;
-                        previousPredecessor = predecessor;
-                    }
-
-                    valid = !predecessor.markedForRemoval
-                            && predecessor.forward[level] == successor;
-                }
-            
-                if (!valid) {
-                    return false; 
-                }
-
-                for (int level = highestLevelFound; level >= 0; level -= 1) {
-                    predecessors[level].forward[level] = nodeToRemove.forward[level];
-                }                
-
-                nodeToRemove.lock.unlock();
-                size.decrementAndGet();
-
-                return true;                    
+            else {
+                return false;
             } 
-            finally {
-                for (int level = 0; level <= highestLockedLevel; level += 1) {
-                    if (predecessors[level].lock.isHeldByCurrentThread()) { 
-                        predecessors[level].lock.unlock();
-                    }
-                }
-            }             
-        }
-        else {
-            return false;
         } 
-        
     }
 
 	/**
@@ -248,9 +252,10 @@ public class SkipList extends AbstractSet<Integer> {
         int highestLevel = -1;
         int searchKey = (Integer) value;
         Node predecessor = this.header;
+        Node current; 
 
         for (int level = maxLevel - 1; level >= 0; level -= 1) {
-            Node current = predecessor.forward[level];
+            current = predecessor.forward[level];
             
             while (current.key < searchKey) {
                 predecessor = current;
