@@ -3,7 +3,12 @@
 \doublespacing
 
 \abstract{
-  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  In concurrent applications with big data, the ability to modify large lists
+  concurrently becomes critical. Using traditional, globally-locked,
+  concurrent data structures we can achieve concurrency but, at the cost of
+  modification speed as the entire structure must be locked during a
+  modification. In this paper we explore creating a Fine-gained and lock-free
+  Skip Lists and compare their performance.
 }
 
 <!-- \newpage -->
@@ -12,13 +17,12 @@
 
 A Skip List is a data structure designed to allow for fast searching like a
 B-Tree, but also allow for fine-gained concurrency like a Linked List allows.
-We implemented a Lock-free and fine-gained Skip-List, showing that we can get
-comparable performance between our Implementation and Java's
-$java.util.ConcurrentSkipListSet$. Lock-free means that we use atomic actions
-instead of locks (or semaphores), we expect that this will give us a performance
-improvement as we will not have to perform lock arbitration. Fine-gained means
-that a small subset of the list will block other modifications, instead of the
-entire list blocking.
+We implemented a Lock-free and fine-gained Skip-Lists, showing that we can get
+comparable performance between our Implementations. Lock-free means that we use
+atomic actions instead of locks (or semaphores), we expect that this will give
+us a performance improvement as we will not have to perform lock arbitration.
+Fine-gained means that a small subset of the list will block other
+modifications, instead of the entire list blocking.
 
 | Operation        | Linked List      | Binary Tree      | Skip List           |
 |------------------|------------------|------------------|---------------------|
@@ -45,31 +49,26 @@ allows for fine-gained locking.
 
 ## Implementation
 
-A skip-list is a sorted linked list with several layers that enable searches to skip forward various distances in the list, as shown below:
+A skip-list is a sorted linked list with several layers that enable searches to
+skip forward various distances in the list, as shown below:
 
 ![skip-list diagram](skip_list_diagram.png)
 
-We implemented the probabilistic skip-list where the insertion of an element has some probability _p_ that it will be inserted in the current level vs the next one. This allows for a probabalistically even distribution of links such that we can obtain O(_log(n)_) insertion time.
+We implemented the probabilistic skip-list where the insertion of an element has
+some probability _p_ that it will be inserted in the current level vs the next
+one. This allows for a probabalistically even distribution of links such that we
+can obtain O(_log(n)_) insertion time.
 
-## Something else
+## Design Alternatives
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+In this paper we explore one major design decision, whether to make a lock-free
+or fine-gained skip list, however other decisions must also be considered. For the
+lock-free version, we made the decisions to use Atomic References as opposed to
+Atomic updates to the nodes. For the fine-gained version we considered creating
+locks on the node, or the node/layer pair.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+{{Atomic -- John}}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+{{Node/Layer -- Julian}}
+
+## Performance Comparison
