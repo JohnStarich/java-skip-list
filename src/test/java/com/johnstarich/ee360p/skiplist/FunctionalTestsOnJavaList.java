@@ -16,19 +16,18 @@ import static org.junit.Assert.*;
  * Created by Alec on 4/19/2017.
  */
 
-/*apparent bugs
-    remove does not produce correct return value for iterator, toString, contains, add, or a second remove
+/*bugs
+    remove does not produce correct return value for iterator, toString, contains, or add
     toString has extra , on last element
-    hanging
  */
-public class SkipListFunctionalTests {
+public class FunctionalTestsOnJavaList {
 
     private final Random rand = new Random();
     private final int numThreads = 20, defaultEntries = 1000, numLevels = 3;
     private static CyclicBarrier start, done;
     private boolean parallelPass;
 
-    private void makeEqualLists(SkipList skipList, ConcurrentSkipListSet<Integer> benchmark){
+    private void makeEqualLists(ConcurrentSkipListSet<Integer> skipList, ConcurrentSkipListSet<Integer> benchmark){
         Integer toAdd;
         for(int i = 0; i < defaultEntries; i++){
             do{
@@ -37,8 +36,8 @@ public class SkipListFunctionalTests {
             skipList.add(toAdd);
         }
     }
-    private SkipList createSkipList(int entries){
-        SkipList skipList = new SkipList(numLevels);
+    private ConcurrentSkipListSet<Integer> createSkipList(int entries){
+        ConcurrentSkipListSet<Integer> skipList = new ConcurrentSkipListSet<Integer>();
         for(int i = 0; i < entries; i++){
             while(!skipList.add(rand.nextInt()));
         }
@@ -53,7 +52,7 @@ public class SkipListFunctionalTests {
         return skipList;
     }
 
-    private boolean orderInvariant(SkipList skipList){
+    private boolean orderInvariant(ConcurrentSkipListSet<Integer> skipList){
         int size = skipList.size();
         if(size <= 1){
             return true;
@@ -74,7 +73,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addReturnTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         boolean addResult;
         Integer toAdd;
@@ -90,7 +89,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addNullTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         Throwable ex = null;
         try {
             skipList.add(null);
@@ -102,7 +101,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addSizeTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         for(int i = 0; i < defaultEntries; i++){
             while(!skipList.add(rand.nextInt()));
             assertEquals(i+1,skipList.size());
@@ -111,7 +110,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addOrderTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         for(int i = 0; i < defaultEntries; i++){
             while(!skipList.add(rand.nextInt()));
             assertTrue(orderInvariant(skipList));
@@ -120,7 +119,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addEqualIteratorTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         boolean addResult;
         Integer toAdd;
@@ -143,7 +142,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void addEqualToStringTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         boolean addResult;
         Integer toAdd;
@@ -160,7 +159,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void createEmptyIteratorTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         Throwable ex = null;
         try{
             Iterator iterator = skipList.iterator();
@@ -173,7 +172,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void createIteratorTest(){
-        SkipList skipList = createSkipList(defaultEntries);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(defaultEntries);
         Iterator iterator = skipList.iterator();
         for(int i = 0; i < defaultEntries; i++){
             assertTrue(iterator.hasNext());
@@ -184,7 +183,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void containsReturnTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         boolean addResult;
         Integer toAdd;
 
@@ -199,7 +198,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void containsNullTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         Throwable ex = null;
         try{
             skipList.contains(null);
@@ -211,19 +210,19 @@ public class SkipListFunctionalTests {
 
     @Test
     public void containsNotIntTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         assertFalse(skipList.contains(new Double(20.0)));
     }
 
     @Test
     public void zeroSizeTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         assertEquals(0,skipList.size());
     }
 
     @Test
     public void removeReturnTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         for(int i = 0; i < defaultEntries; i++){
@@ -240,7 +239,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeNullTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         Throwable ex = null;
         try {
             skipList.remove(null);
@@ -253,13 +252,13 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeNotIntTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         assertFalse(skipList.remove(new Double(20.0)));
     }
 
     @Test
     public void removeSizeTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         for(int i = 0; i < defaultEntries; i++){
@@ -280,7 +279,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeOrderTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         Object[] benchmarkArr = benchmark.toArray();
@@ -295,7 +294,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeEqualToStringTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         Object[] benchmarkArr = benchmark.toArray();
@@ -311,7 +310,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeEqualIteratorTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         Object[] benchmarkArr = benchmark.toArray();
@@ -333,7 +332,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeContainsTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         skipList.add(0);
         skipList.remove(0);
         assertFalse(skipList.contains(0));
@@ -341,7 +340,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void removeAddTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         skipList.add(0);
         skipList.remove(0);
         assertTrue(skipList.add(0));
@@ -349,7 +348,7 @@ public class SkipListFunctionalTests {
 
     @Test
     public void doubleRemoveReturnTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         skipList.add(1);
         skipList.remove(1);
         assertFalse(skipList.remove(1));
@@ -357,14 +356,14 @@ public class SkipListFunctionalTests {
 
     @Test
     public void emptyToStringTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         assertEquals(skipList.toString(), benchmark.toString());
     }
 
     @Test
     public void toStringTest(){
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         assertEquals(benchmark.toString(), skipList.toString());
@@ -373,7 +372,7 @@ public class SkipListFunctionalTests {
     @Test
     public void parallelAddOrderTest(){
         Thread toRun;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         parallelPass = false;
         start = new CyclicBarrier(numThreads);
         class AddOrderThread extends Thread{
@@ -416,7 +415,7 @@ public class SkipListFunctionalTests {
     @Test
     public void parallelAddContentTest(){
         Thread toRun;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         start = new CyclicBarrier(numThreads);
         class AddContentThread extends Thread{
@@ -464,7 +463,7 @@ public class SkipListFunctionalTests {
     @Test
     public void parallelRemoveContentTest(){
         Thread toRun;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         Object[] benchmarkArr = benchmark.toArray();
@@ -515,7 +514,7 @@ public class SkipListFunctionalTests {
     @Test
     public void parallelAddSizeTest() {
         Thread toRun;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         start = new CyclicBarrier(numThreads);
         class AddSizeThread extends Thread {
             public void run() {
@@ -555,7 +554,7 @@ public class SkipListFunctionalTests {
     @Test
     public void parallelRemoveSizeTest(){
         Thread toRun;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> benchmark = createConcurrentSkipListSet(0);
         makeEqualLists(skipList,benchmark);
         Object[] benchmarkArr = benchmark.toArray();
@@ -603,7 +602,7 @@ public class SkipListFunctionalTests {
     public void parallelContainsTest(){
         Thread toRun;
         parallelPass = true;
-        SkipList skipList = createSkipList(0);
+        ConcurrentSkipListSet<Integer> skipList = createSkipList(0);
         ConcurrentSkipListSet<Integer> allList = createConcurrentSkipListSet(0);
         int[] contained = new int[numThreads];
         int[] notContained = new int[numThreads];
@@ -652,13 +651,13 @@ public class SkipListFunctionalTests {
                     e.printStackTrace();
                 }
                 parallelPass = !skipList.contains(notContained[rand.nextInt(numThreads)]);
-                    try {
-                        done.await();
-                    }catch(BrokenBarrierException e){
-                        e.printStackTrace();
-                    }catch(InterruptedException e){
-                        e.printStackTrace();
-                    }
+                try {
+                    done.await();
+                }catch(BrokenBarrierException e){
+                    e.printStackTrace();
+                }catch(InterruptedException e){
+                    e.printStackTrace();
+                }
             }
         }
 
