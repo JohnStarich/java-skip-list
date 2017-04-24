@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A fine-grained and lock-free skip-list implementation.
@@ -189,18 +190,24 @@ public class SkipList extends AbstractSet<Integer> {
 	@Override
 	public Iterator<Integer> iterator() {
 		return new Iterator<Integer>() {
-			private Node current = header.forward[0];
+			private AtomicReference<Node> current = new AtomicReference<Node>(header);
 
 			@Override
 			public boolean hasNext() {
-				return current.key != Integer.MAX_VALUE;
+				// TODO change current here to guarantee it exists
+				return current.get().key != Integer.MAX_VALUE;
 			}
 
 			@Override
 			public Integer next() {
-				Integer value = current.value;
-				current = current.forward[0];
-				return value;
+				Node original = current.get();
+				Node currentNode = null;
+				do {
+					currentNode = current.get();
+					current.compareAndSet(currentNode, currentNode.forward[0]);
+				} while (currentNode.key != Integer.MAX_VALUE
+						&& (currentNode == original || currentNode.markedForRemoval.get()));
+				return currentNode.value;
 			}
 
 			@Override
