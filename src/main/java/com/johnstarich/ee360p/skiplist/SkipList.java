@@ -72,9 +72,7 @@ public class SkipList extends AbstractSet<Integer> {
             if (foundNodeLevel != -1) {
                 Node foundNode = successors[foundNodeLevel];
                 if (!foundNode.markedForRemoval) {
-                    while (!foundNode.fullyLinked) {
-                        System.out.println("Waiting for found node to be fully linked.");
-                    }
+                    while (!foundNode.fullyLinked); 
                     return false;
                 }
             }
