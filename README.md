@@ -207,8 +207,17 @@ in the locking mechanism alone.
 
 ## Conclusion
 
-//TODO
-
+We implemented both a lock free and a fine-grained version of a skip list. We used
+AtomicBooleans in our lock free version and a ReentrantLock on each node in our
+fine-grained version to ensure mutex. Both of our implementations were slower than the
+ConcurrentSkipListSet from the Java library. The lock free skip list was difficult to
+implement due to the structure of a skip list. It was difficult to ensure deadlock
+freedom while making a change because there are multiple nodes that can be affected by
+each change. Although it only performed on a small set of nodes, the lock free version
+was significantly slower than both of the other implementations. The fine-grained
+list underperformed when there was little concurrency, but as the number of threads
+operating on the list increased, the performance of our version came very close to the
+ConcurrentSkipListSet.
 
 ## Appendix A: Educational Material
 
