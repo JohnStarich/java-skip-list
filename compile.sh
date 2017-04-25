@@ -7,7 +7,7 @@ pandoc --read=markdown_github \
     --filter ./markdown_filter.py \
     -s README.md \
     -V title="\textbf{Lock-free Skip List}" \
-    -V author="Alec Bargas \\\\ Julian Domingo \\\\ Jacob Ingalls \\\\ John Starich \\\\ EE 360P Concurrent and Distributed Programming \\\\ Class: T TH 3:30 - 5:00 PM" \
+    -V author="Alec Bargas \\\\ Julian Domingo \\\\ Jacob Ingalls \\\\ John Starich \\\\ EE 360P Concurrent and Distributed Programming \\\\ Class: T TH 3:30 - 5:00 PM \\\\ Repo: \href{https://github.com/JohnStarich/java-skip-list}{github.com/JohnStarich/java-skip-list}" \
     -V margin-left=1in \
     -V margin-right=1in \
     -V margin-top=1in \
