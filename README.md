@@ -67,11 +67,17 @@ lock-free version, we made the decisions to use Atomic References as opposed to
 Atomic updates to the nodes. For the fine-gained version we considered creating
 locks on the node, or the node/layer pair.
 
-{{Atomic -- John}}
+In the lock free skip list we debated on wether we should atomically update a
+boolean that says if the node is valid, or if we should use markable references
+to forward nodes. If we were to invalidate the entire node, we could quickly
+stop traversal through the list, as we don't need to iterate through the forward
+node array to determine if we should stop iterating.  On the other hand if we
+mark the references, then we can stop before accessing a node that is being updated.
+Additionally, if we mark the reference, then we can traverse layers that above the modification,
+removing an effective lock from a large portion of the list. We believe that
+using atomic, markable references is the better choice.
 
-#### Fine-grained
-
-To ensure the layers of the skip-list are sublists of lower layer lists,
+To ensure the layers of the fine-grained skip-list are sublists of lower layer lists,
 modifications to the skip-list should only occur once all locks are obtained for
 nodes needing modification. As a result of the internally layered structure of a
 skip-list, locks are retrieved for all predecessor nodes up to and including the
@@ -80,13 +86,11 @@ point to either the correct location for a new node (add() operations), or to
 the node to remove (remove() operations). Once a thread finishes their
 modification, the thread unlocks all locks belonging to it, allowing other
 threads to acquire those locks or locks passed them.
-
 This implementation guarantees deadlock freedom; when a thread locks a node with
-a search key _k_, it will never acquire a lock on a node with a search key >=
-_k_. From an implementation perspective, this means locks are acquired from the
+a search key $k$ it will never acquire a lock on a node with a search key $>=k$
+. From an implementation perspective, this means locks are acquired from the
 lowest layer upwards. Furthermore, concurrent modifications are guaranteed as
 long as there aren't overlapping search key values.
-
 On the other hand, the implementation is blocking; it prevents other threads
 from completing operations on the skip list which don't have the locks. This
 results in a significant time/memory overhead: a thread must retry its operation
