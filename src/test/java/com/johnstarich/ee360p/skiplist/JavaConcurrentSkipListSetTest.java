@@ -19,6 +19,8 @@ import static org.junit.Assert.assertFalse;
 
 public class JavaConcurrentSkipListSetTest {
 
+    public final int power = 2;
+
     @Test
     public void helloTest() throws Exception {
         System.out.print("こんにちわ");
@@ -29,7 +31,8 @@ public class JavaConcurrentSkipListSetTest {
     private Map<String, List<Long>> bench(List<Integer> rounds, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
-        sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
+        sets.put("Fine-Grained", new FineGrainedSkipList(10)); // TODO Remove max level
+        sets.put("Lock-Free", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
@@ -53,7 +56,8 @@ public class JavaConcurrentSkipListSetTest {
                                                     long nodes, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
-        sets.put("OurIMPL", new SkipList(10)); // TODO Remove max level
+        sets.put("Fine-Grained", new FineGrainedSkipList(10)); // TODO Remove max level
+        sets.put("Lock-Free", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
@@ -146,7 +150,7 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("Insert", 20, insulter);
+        benchRunner("Insert", power, insulter);
     }
 
     @Test
@@ -165,7 +169,7 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveHead", 20, remover);
+        benchRunner("RemoveHead", power, remover);
     }
 
     @Test
@@ -184,7 +188,7 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveTail", 20, remover);
+        benchRunner("RemoveTail", power, remover);
     }
 
 
@@ -208,7 +212,7 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("RemoveRandom", 20, remover);
+        benchRunner("RemoveRandom", power, remover);
     }
 
 
@@ -232,6 +236,6 @@ public class JavaConcurrentSkipListSetTest {
             return System.nanoTime() - time;
         };
 
-        benchRunner("ContainsRandom", 20, container);
+        benchRunner("ContainsRandom", power, container);
     }
 }

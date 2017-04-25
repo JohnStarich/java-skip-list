@@ -1,9 +1,10 @@
 package com.johnstarich.ee360p.skiplist;
 
 import java.util.AbstractSet;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A fine-grained and lock-free skip-list implementation.
@@ -14,17 +15,18 @@ public class SkipList extends AbstractSet<Integer> {
 		int key;
 		int value;
 		int level;
-		ArrayList<Node> forward;
+		Node[] forward;
+
+		AtomicBoolean fullyLinked;
+		AtomicBoolean markedForRemoval;
 
 		public Node(int key, int value, int level, int maxLevel) {
 			this.key = key;
 			this.value = value;
 			this.level = level;
-			this.forward = new ArrayList<>(maxLevel);
-
-			for (int i = 0; i < maxLevel; i += 1) {
-				this.forward.add(null);
-			}
+			this.forward = new Node[maxLevel];
+			this.fullyLinked = new AtomicBoolean(false);
+			this.markedForRemoval = new AtomicBoolean(false);
 		}
 
 		public String toString() {
@@ -32,11 +34,11 @@ public class SkipList extends AbstractSet<Integer> {
 		}
 	}
 
-	Node header;
-	int currentLevels;
-	int maxLevel;
-	int size;
-	float p = 0.5f;
+	final Node header;
+	AtomicInteger currentLevels;
+	final int maxLevel;
+	AtomicInteger size;
+	final float p = 0.5f;
 
 	/**
 	 * Create a skip list with a maximum level.
@@ -44,12 +46,12 @@ public class SkipList extends AbstractSet<Integer> {
 	 * @param maxLevel The maximum level for this SkipList
 	 */
 	public SkipList(int maxLevel) {
-		this.currentLevels = 0;
-		this.size = 0;
+		this.currentLevels = new AtomicInteger(0);
+		this.size = new AtomicInteger(0);
 		this.maxLevel = maxLevel;
 		header = new Node(Integer.MAX_VALUE, Integer.MAX_VALUE, 0, maxLevel);
 		for (int i = 0; i < maxLevel; i += 1) {
-			header.forward.set(i, header);
+			header.forward[i] = header;
 		}
 	}
 
@@ -59,40 +61,45 @@ public class SkipList extends AbstractSet<Integer> {
 	}
 
 	private boolean insert(int searchKey, int value) {
-		ArrayList<Node> update = new ArrayList<>();
-		for (int i = 0; i <= currentLevels; i += 1) {
-			update.add(null);
-		}
+		Node[] update = new Node[maxLevel];
 		Node current = this.header;
-		for (int level = currentLevels; level >= 0; level--) {
-			while (current.forward.get(level).key < searchKey) {
-				current = current.forward.get(level);
+		int levels = currentLevels.get();
+		for (int level = levels; level >= 0; level--) {
+			while (current.forward[level].key < searchKey) {
+				current = current.forward[level];
 			}
-			update.set(level, current);
+			update[level] = current;
+			current.fullyLinked.compareAndSet(true, false);
 		}
 
-		current = current.forward.get(0);
+		current = current.forward[0];
 
-		if (current.key == searchKey) {
-			current.value = value;
+		if (current.key == searchKey && !current.markedForRemoval.get()) {
+			while (!current.fullyLinked.get());
 			return false;
 		}
 		else {
 			int newLevel = chooseRandomLevel();
 
-			if (newLevel > currentLevels) {
-				newLevel = currentLevels + 1;
-				currentLevels = newLevel;
-				update.add(header);
+			if (newLevel > currentLevels.get()) {
+				newLevel = currentLevels.incrementAndGet();
+				levels = newLevel;
+				update[newLevel] = header;
 			}
 
 			Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 
-			for (int level = 0; level <= currentLevels; level++) {
-				newNode.forward.set(level, update.get(level).forward.get(level));
-				update.get(level).forward.set(level, newNode);
+			for (int level = 0; level <= levels; level++) {
+				newNode.forward[level] = update[level].forward[level];
+				update[level].forward[level] = newNode;
 			}
-			size++;
+
+			for (int level = 0; level <= levels; level++) {
+				update[level].fullyLinked.compareAndSet(false, true);
+			}
+			newNode.fullyLinked.compareAndSet(false, true);
+
+			size.incrementAndGet();
 
 			return true;
 		}
@@ -104,29 +111,41 @@ public class SkipList extends AbstractSet<Integer> {
 			return false;
 		}
 		int searchKey = (Integer)value;
-		ArrayList<Node> update = new ArrayList<>();
+		Node[] update = new Node[maxLevel];
 		Node current = this.header;
-		for (int level = currentLevels; level >= 0; level--) {
-			while (current.forward.get(level).key < searchKey) {
-				current = current.forward.get(level);
+		for (int level = currentLevels.get(); level >= 0; level--) {
+			while (current.forward[level].key < searchKey) {
+				current = current.forward[level];
 			}
-			update.add(current);
+			update[level] = current;
+			current.fullyLinked.compareAndSet(true, false);
 		}
 
-		current = current.forward.get(0);
+		current = current.forward[0];
 
-		if (current.key == searchKey) {
-			for (int level = 0; level < currentLevels; level++) {
-				if (!update.get(level).forward.get(level).equals(current)) {
+		if (current.key == searchKey && !current.markedForRemoval.get()) {
+			current.markedForRemoval.compareAndSet(false, true);
+			int levels = currentLevels.get();
+			for (int level = 0; level < levels; level++) {
+				if (update[level].forward[level] != current) {
 					break;
 				}
-				update.get(level).forward.set(level, current.forward.get(level));
+				if (update[level].markedForRemoval.get()) {
+					continue;
+				}
+				update[level].forward[level] = current.forward[level];
 			}
-			size--;
+
+			size.decrementAndGet();
+
 			current = null;
 
-			while (currentLevels > 0 && header.forward.get(currentLevels).equals(header)) {
-				currentLevels--;
+			while (levels > 0 && header.forward[levels].equals(header)) {
+				levels = currentLevels.decrementAndGet();	
+			}
+
+			for (int level = 0; level < levels; level++) {
+				update[level].fullyLinked.compareAndSet(false, true);
 			}
 
 			return true;
@@ -143,14 +162,14 @@ public class SkipList extends AbstractSet<Integer> {
 		int searchKey = (Integer)value;
 		Node current = this.header;
 
-		for (int level = currentLevels; level >= 0; level--) {
-			while (current.forward.get(level).key < searchKey) {
-				current = current.forward.get(level);
+		for (int level = currentLevels.get(); level >= 0; level--) {
+			while (current.forward[level].key < searchKey) {
+				current = current.forward[level];
 			}
 		}
 
-		int limit = current.forward.get(0).value;
-		return limit == searchKey;
+		int limit = current.forward[0].value;
+		return limit == searchKey && current.fullyLinked.get() && !current.markedForRemoval.get();
 	}
 
 	private Random levelRandom = new Random(0);
@@ -164,13 +183,13 @@ public class SkipList extends AbstractSet<Integer> {
 	}
 
 	public int size() {
-		return size;
+		return size.get();
 	}
 
 	@Override
 	public Iterator<Integer> iterator() {
 		return new Iterator<Integer>() {
-			private Node current = header.forward.get(0);
+			private Node current = header.forward[0];
 
 			@Override
 			public boolean hasNext() {
@@ -180,7 +199,7 @@ public class SkipList extends AbstractSet<Integer> {
 			@Override
 			public Integer next() {
 				Integer value = current.value;
-				current = current.forward.get(0);
+				current = current.forward[0];
 				return value;
 			}
 
