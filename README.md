@@ -83,19 +83,25 @@ nodes needing modification. As a result of the internally layered structure of a
 skip-list, locks are retrieved for all predecessor nodes up to and including the
 highest layer of occurrence of a node to add or remove. The predecessor nodes
 point to either the correct location for a new node (add() operations), or to
-the node to remove (remove() operations). Once a thread finishes their
+the node to remove (remove() operations). In our implementation, each node is
+associated with a single lock that locks the node at every layer. An alternative
+implementation could lock each layer of a node separately. Once a thread finishes their
 modification, the thread unlocks all locks belonging to it, allowing other
 threads to acquire those locks or locks passed them.
 This implementation guarantees deadlock freedom; when a thread locks a node with
 a search key $k$ it will never acquire a lock on a node with a search key $>=k$.
 From an implementation perspective, this means locks are acquired from the
 lowest layer upwards. Furthermore, concurrent modifications are guaranteed as
-long as there aren't overlapping search key values.
+long as there aren't overlapping search key values. It would be more difficult
+to ensure deadlock freedom if each node had separate locks on each layer, because
+multiple threads could have access to different parts of the node at the same time.
 On the other hand, the implementation is blocking; it prevents other threads
 from completing operations on the skip list which don't have the locks. This
 results in a significant time/memory overhead: a thread must retry its operation
 until it can successfully acquire the lock(s) it needs, and every node must have
-their own instance of a ReentrantLock.
+their own instance of a ReentrantLock. If we were to lock each layer of a node
+separately, the node would not be blocked for as long and processes could access
+different parts of a node at the same time.
 
 ## Performance Comparison
 
