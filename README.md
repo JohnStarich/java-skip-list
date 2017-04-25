@@ -59,7 +59,23 @@ some probability _p_ that it will be inserted in the current level vs the next
 one. This allows for a probabalistically even distribution of links such that we
 can obtain O(_log(n)_) insertion time.
 
-### Fine-Grained
+## Design Alternatives
+
+In this paper we explore design decisions specific to the lock free and
+fine-grained implementations of a skip list. For the lock-free version, we made the
+decisions to use Atomic References as opposed to Atomic updates to the nodes.
+For the fine-grained version we considered creating locks on the node, or the
+node/layer pair.
+
+In the lock free skip list we debated on wether we should atomically update a
+boolean that says if the node is valid, or if we should use markable references
+to forward nodes. If we were to invalidate the entire node, we could quickly
+stop traversal through the list, as we don't need to iterate through the forward
+node array to determine if we should stop iterating.  On the other hand if we
+mark the references, then we can stop before accessing a node that is being updated.
+Additionally, if we mark the reference, then we can traverse layers that above the modification,
+removing an effective lock from a large portion of the list. We believe that
+using atomic, markable references is the better choice.
 
 To ensure the layers of the fine-grained skip-list are sublists of lower layer lists,
 modifications to the skip-list should only occur once all locks are obtained for
@@ -80,30 +96,6 @@ from completing operations on the skip list which don't have the locks. This
 results in a significant time/memory overhead: a thread must retry its operation
 until it can successfully acquire the lock(s) it needs, and every node must have
 their own instance of a ReentrantLock.
-
-### Lock Free
-
-//TODO
-
-## Design Alternatives
-
-In this paper we explore design decisions specific to the lock free and
-fine-grained implementations of a skip list. For the lock-free version, we made the
-decisions to use Atomic References as opposed to Atomic updates to the nodes.
-For the fine-grained version we considered creating locks on the node, or the
-node/layer pair.
-
-In the lock free skip list we debated on wether we should atomically update a
-boolean that says if the node is valid, or if we should use markable references
-to forward nodes. If we were to invalidate the entire node, we could quickly
-stop traversal through the list, as we don't need to iterate through the forward
-node array to determine if we should stop iterating.  On the other hand if we
-mark the references, then we can stop before accessing a node that is being updated.
-Additionally, if we mark the reference, then we can traverse layers that above the modification,
-removing an effective lock from a large portion of the list. We believe that
-using atomic, markable references is the better choice.
-
-//TODO: fine-grained
 
 ## Performance Comparison
 
@@ -263,3 +255,25 @@ the node is marked as removed, but is not actually deleted from the structure.
 A node that is marked as removed is no longer considered as included in the list
 for further operations. The reference to the deleted node in the preceding node is
 then replaced with the reference to the node that followed the deleted node.
+
+### Fine-Grained Skip-List
+
+In order to create a concurrent version of a skip-list, we first used
+ReentrantLocks to assure mutex on alterations. Modifications to the skip-list
+only occur once all locks are obtained for nodes needing modification. These locks
+come from the nodes that precede the node to be modified on each level since their
+next node pointers might be updated. While making modifications to a node, a
+fullyLinked boolean is set to false and is reset once the modifications are done
+(at which point the obtained locks will also be released). Additionally, the locks
+for all of the Once a node is removed, the markedForRemoval boolean is set to true,
+telling other operations to ignore the node. Atomic values for the list size and
+number of layers in the list ensure consistent values.
+
+### Lock Free Skip-List
+
+A lock free version of the skip list can use AtomicBooleans for the fullyLinked
+and markedForRemoval conditions described above to ensure mutex. Additionally,
+the nodes do not have ReentrantLocks. While making changes to the list, CAS on
+fullyLinked is called for the node on each layer that precedes the node to be
+changed/added. Similarly, when a node is removed, CAS is called for the
+markedForRemoval boolean.
