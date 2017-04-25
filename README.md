@@ -69,7 +69,29 @@ locks on the node, or the node/layer pair.
 
 {{Atomic -- John}}
 
-{{Node/Layer -- Julian}}
+#### Fine-grained
+
+To ensure the layers of the skip-list are sublists of lower layer lists,
+modifications to the skip-list should only occur once all locks are obtained for
+nodes needing modification. As a result of the internally layered structure of a
+skip-list, locks are retrieved for all predecessor nodes up to and including the
+highest layer of occurrence of a node to add or remove. The predecessor nodes
+point to either the correct location for a new node (add() operations), or to
+the node to remove (remove() operations). Once a thread finishes their
+modification, the thread unlocks all locks belonging to it, allowing other
+threads to acquire those locks or locks passed them.
+
+This implementation guarantees deadlock freedom; when a thread locks a node with
+a search key _k_, it will never acquire a lock on a node with a search key >=
+_k_. From an implementation perspective, this means locks are acquired from the
+lowest layer upwards. Furthermore, concurrent modifications are guaranteed as
+long as there aren't overlapping search key values.
+
+On the other hand, the implementation is blocking; it prevents other threads
+from completing operations on the skip list which don't have the locks. This
+results in a significant time/memory overhead: a thread must retry its operation
+until it can successfully acquire the lock(s) it needs, and every node must have
+their own instance of a ReentrantLock.
 
 ## Performance Comparison
 
