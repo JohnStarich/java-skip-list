@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 
 public class JavaConcurrentSkipListSetTest {
 
-    public final int power = 3;
+    public final int power = 4;
 
     @Test
     public void helloTest() throws Exception {
