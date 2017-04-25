@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 
 public class JavaConcurrentSkipListSetTest {
 
-    public final int power = 10;
+    public final int power = 3;
 
     @Test
     public void helloTest() throws Exception {
@@ -32,6 +32,7 @@ public class JavaConcurrentSkipListSetTest {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
         sets.put("Fine-Grained", new FineGrainedSkipList(10)); // TODO Remove max level
+        sets.put("Lock-Free", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
@@ -55,7 +56,8 @@ public class JavaConcurrentSkipListSetTest {
                                                     long nodes, BenchRunner br) {
         Map<String, AbstractSet<Integer>> sets = new HashMap<>();
         sets.put("JavaIMPL", new ConcurrentSkipListSet<>());
-        sets.put("OurIMPL", new FineGrainedSkipList(10)); // TODO Remove max level
+        sets.put("Fine-Grained", new FineGrainedSkipList(10)); // TODO Remove max level
+        sets.put("Lock-Free", new SkipList(10)); // TODO Remove max level
 
         Map<String, List<Long>> results = new HashMap<>();
         for (Map.Entry<String, AbstractSet<Integer>> entry: sets.entrySet()) {
