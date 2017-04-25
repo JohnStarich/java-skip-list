@@ -26,7 +26,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void add() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		assertTrue(s.add(1));
 		assertEquals(1, s.size());
 		assertFalse(s.add(1));
@@ -36,7 +36,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void remove() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		assertEquals(0, s.size());
 		assertFalse(s.remove(1));
 		assertEquals(0, s.size());
@@ -47,7 +47,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void contains() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		assertFalse(s.contains(1));
 		s.add(1);
 		assertTrue(s.contains(1));
@@ -55,7 +55,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void addMultiple() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		s.add(1);
 		s.add(5);
 		Iterator<Integer> i = s.iterator();
@@ -70,7 +70,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void addLots1() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		System.out.println(s);
 		s.add(5);
 		System.out.println(s);
@@ -89,7 +89,7 @@ public class SkipListEdgeTest {
 
 	@Test
 	public void addLots() {
-		SkipList s = new SkipList(5);
+		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		for (int i = 100; i >= 0; i -= 1) {
 			s.add(i);
 		}
