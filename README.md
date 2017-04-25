@@ -1,4 +1,4 @@
-# Lock-free Skip List
+# Skip Lists
 
 \doublespacing
 
@@ -246,7 +246,7 @@ markedForRemoval boolean.
   \begin{axis}[
       title={Remove all elements in Random order},
       xlabel={Operations ($log_2(n)$)},
-      ylabel={Completion Time ($long_2(ns)$)},
+      ylabel={Completion Time ($log_2(ns)$)},
       xmin=0, xmax=20,
       ymin=0, ymax=30,
       xtick={1,5,10,15,20},
@@ -286,7 +286,7 @@ markedForRemoval boolean.
   \begin{axis}[
       title={Remove all elements in Random order 8 Threads},
       xlabel={Operations ($log_2(n)$)},
-      ylabel={Completion Time ($long_2(ns)$)},
+      ylabel={Completion Time ($log_2(ns)$)},
       xmin=0, xmax=20,
       ymin=0, ymax=30,
       xtick={1,5,10,15,20},
@@ -306,7 +306,7 @@ markedForRemoval boolean.
             (0, 9.17) 	(1, 9.18) 	(2, 9.16) 	(3, 11.75) 	(4, 12.84) 	(5, 14.16) 	(6, 14.66) 	(7, 16.5) 	(8, 17.63) 	(9, 18.85) 	(10, 19.16) 	(11, 19.93) 	(12, 20.81) 	(13, 21.77) 	(14, 22.89) 	(15, 23.89) 	(16, 25.09) 	(17, 26.37) 	(18, 27.47) 	(19, 28.73)
         };
 
-    \addplot[ color=red, mark=none, ]
+    \addplot[ color=green, mark=none, ]
         coordinates {
             (0, 10.95) 	(1, 11.46) 	(2, 10.83) 	(3, 13.3)
         };
