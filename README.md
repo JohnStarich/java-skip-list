@@ -123,5 +123,5 @@ To remove a node, a search is conducted for the value to be added. If the target
 is not found, then remove returns without modifying the skip list. If it is found,
 the node is marked as removed, but is not actually deleted from the structure.
 A node that is marked as removed is no longer considered as included in the list
-for further operations. The benefit of not physically removing the node is that we
-do not need to worry about evening out the layers of the list on remove operations.
+for further operations. The reference to the deleted node in the preceding node is
+then replaced with the reference to the node that followed the deleted node.
