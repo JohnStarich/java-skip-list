@@ -97,7 +97,8 @@ public class SkipList extends AbstractSet<Integer> {
 			int newLevel = chooseRandomLevel();
 
 			if (newLevel >= levels) {
-				levels = currentLevels.incrementAndGet();
+				currentLevels.incrementAndGet();
+				levels += 1;
 				newLevel = levels - 1;
 				update[newLevel] = header.getReference();
 				header.attemptMark(header.getReference(), false);
@@ -235,7 +236,7 @@ public class SkipList extends AbstractSet<Integer> {
 			@Override
 			public boolean hasNext() {
 				// TODO change current here to guarantee it exists
-				return current.getReference().forward[0].getReference().key != Integer.MAX_VALUE;
+				return current.getReference().key != Integer.MAX_VALUE;
 			}
 
 			@Override
