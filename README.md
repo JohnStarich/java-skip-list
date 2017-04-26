@@ -237,7 +237,7 @@ fullyLinked is called for the node on each layer that precedes the node to be
 changed/added. Similarly, when a node is removed, CAS is called on the
 markedForRemoval boolean.
 
-# Appendix B: Performance Data Graphs
+## Appendix B: Performance Data Graphs
 
 \begin{figure}[H]
   \centering
