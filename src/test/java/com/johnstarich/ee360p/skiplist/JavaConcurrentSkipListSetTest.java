@@ -1,6 +1,8 @@
 package com.johnstarich.ee360p.skiplist;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -18,8 +21,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class JavaConcurrentSkipListSetTest {
-
-    public final int power = 2;
+    @Rule
+    public Timeout timeout = new Timeout(15, TimeUnit.SECONDS);
+    public final int power = 10;
 
     @Test
     public void helloTest() throws Exception {

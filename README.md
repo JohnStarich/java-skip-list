@@ -8,7 +8,7 @@
   concurrent data structures we can achieve concurrency but, at the cost of
   modification speed as the entire structure must be locked during a
   modification. In this paper we explore creating fine-grained and lock-free
-  skip-lists and compare their performance to the version in the Java library.
+  skip-lists and compare their performance in the Java library.
 }
 
 <!-- \newpage -->
@@ -267,7 +267,7 @@ markedForRemoval boolean.
 
   \addplot[ color=green, mark=none, ]
     coordinates {
-      (0, 12.19) 	(1, 12.65) 	(2, 13.12) 	(3, 14.39)
+      (0, 12.89) 	(1, 12.69) 	(2, 13) 	(3, 13.53) 	(4, 15.57) 	(5, 15.62)
     };
 
   \legend{Java, Fine-grained, Lock-free}
