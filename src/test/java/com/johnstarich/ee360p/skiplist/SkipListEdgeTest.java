@@ -25,6 +25,20 @@ public class SkipListEdgeTest {
 	}
 
 	@Test
+	public void iterate() {
+		SkipList s = new SkipList(5);
+		Iterator<Integer> iter;
+		s.add(1);
+		iter = s.iterator();
+		iter.next();
+
+		s.add(2);
+		iter = s.iterator();
+		iter.next();
+		iter.next();
+	}
+
+	@Test
 	public void add() {
 		FineGrainedSkipList s = new FineGrainedSkipList(5);
 		assertTrue(s.add(1));
@@ -43,6 +57,22 @@ public class SkipListEdgeTest {
 		s.add(1);
 		assertTrue(s.remove(1));
 		assertEquals(0, s.size());
+	}
+
+	@Test
+	public void removeMore() {
+		SkipList s = new SkipList(5);
+		s.add(1);
+		s.add(2);
+		s.add(3);
+		s.add(4);
+		System.out.println(s);
+		assertTrue(s.remove(2));
+		assertEquals(3, s.size());
+
+		System.out.println(s);
+		assertTrue(s.remove(3));
+		assertEquals(2, s.size());
 	}
 
 	@Test
@@ -80,7 +110,13 @@ public class SkipListEdgeTest {
 		System.out.println(s);
 		s.add(3);
 		System.out.println(s);
+		s.add(1);
+		System.out.println(s);
+		s.add(0);
+		System.out.println(s);
 		Iterator<Integer> iter = s.iterator();
+		assertEquals(0, iter.next().intValue());
+		assertEquals(1, iter.next().intValue());
 		assertEquals(2, iter.next().intValue());
 		assertEquals(3, iter.next().intValue());
 		assertEquals(4, iter.next().intValue());
@@ -101,7 +137,7 @@ public class SkipListEdgeTest {
 		for (int i = 200; i > 100; i -= 1) {
 			s.add(i);
 		}
-		
+
 		iter = s.iterator();
 		for (int i = 0; i <= 200; i += 1) {
 			assertEquals(i, iter.next().intValue());

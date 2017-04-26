@@ -64,49 +64,54 @@ public class SkipList extends AbstractSet<Integer> {
 	@SuppressWarnings("unchecked")
 	private boolean insert(int searchKey, int value) {
 		Node[] update = new Node[maxLevel];
-		AtomicMarkableReference<Node> current = new AtomicMarkableReference<Node>(
-				this.header.getReference(), true);
+		AtomicMarkableReference<Node> current = header;
 		int levels = currentLevels.get();
-		for (int level = levels; level >= 0; level--) {
-			Node currentNode;
+		Node currentNode = header.getReference();
+		Node nextNode = currentNode;
+		for (int level = levels - 1; level >= 0; level--) {
+			current = header;
 			do {
 				currentNode = current.getReference();
 				current = currentNode.forward[level];
-			} while (currentNode.key < searchKey || currentNode.markedForRemoval);
-			while (! current.compareAndSet(currentNode, currentNode, true, false));
+				nextNode = current.getReference();
+			} while (nextNode.key < searchKey || nextNode.markedForRemoval);
 			update[level] = currentNode;
 		}
+		if (levels > 0) {
+			while (! current.compareAndSet(nextNode, nextNode, true, false));
+		}
 
-		Node currentNode;
 		do {
-			currentNode = current.getReference();
 			current = currentNode.forward[0];
+			currentNode = current.getReference();
 		} while (currentNode.markedForRemoval);
 
 		if (currentNode.key == searchKey) {
 			for (int level = 0; level < levels; level++) {
-				AtomicMarkableReference<Node> link = update[level].forward[level];
-				while (! link.compareAndSet(currentNode, currentNode, false, true));
+				Node beforeNode = update[level].forward[level].getReference();
+				update[level].forward[level].attemptMark(beforeNode, true);
 			}
 			return false;
 		}
 		else {
 			int newLevel = chooseRandomLevel();
 
-			if (newLevel > currentLevels.get()) {
-				newLevel = currentLevels.incrementAndGet();
-				levels = newLevel;
+			if (newLevel >= levels) {
+				levels = currentLevels.incrementAndGet();
+				newLevel = levels - 1;
 				update[newLevel] = header.getReference();
+				header.attemptMark(header.getReference(), false);
 			}
 
 			Node newNode = new Node(searchKey, value, newLevel, maxLevel);
 			AtomicMarkableReference<Node> atomicNewNode =
 					new AtomicMarkableReference<>(newNode, true);
 
-			for (int level = 0; level <= levels; level++) {
-				Node next = update[level].forward[level].getReference();
-				newNode.forward[level] = atomicNewNode;
-				while (! update[level].forward[level].compareAndSet(next, newNode, false, true));
+			for (int level = 0; level < levels; level++) {
+				newNode.forward[level] = update[level].forward[level];
+				Node beforeNode = update[level].forward[level].getReference();
+				update[level].forward[level].attemptMark(beforeNode, true);
+				update[level].forward[level] = atomicNewNode;
 			}
 
 			size.incrementAndGet();
@@ -124,23 +129,30 @@ public class SkipList extends AbstractSet<Integer> {
 		Node[] update = new Node[maxLevel];
 		AtomicMarkableReference<Node> current = this.header;
 		int levels = currentLevels.get();
-		for (int level = levels; level >= 0; level--) {
-			Node currentNode;
+		Node currentNode = header.getReference();
+		Node nextNode = currentNode;
+		for (int level = levels - 1; level >= 0; level--) {
+			current = header;
 			do {
 				currentNode = current.getReference();
 				current = currentNode.forward[level];
-				// TODO this may be checking the wrong node's key
-			} while (currentNode.key < searchKey || currentNode.markedForRemoval);
-			while (! current.compareAndSet(currentNode, currentNode, true, false));
+				nextNode = current.getReference();
+			} while (nextNode.key < searchKey || nextNode.markedForRemoval);
 			update[level] = currentNode;
 		}
+		if (levels > 0) {
+			while (! current.compareAndSet(nextNode, nextNode, true, false));
+		}
 
-		Node currentNode = current.getReference();
-		current = currentNode.forward[0];
-		if (current == header || currentNode.markedForRemoval) {
-			for (int level = 0; level <= levels; level++) {
+		do {
+			current = currentNode.forward[0];
+			currentNode = current.getReference();
+		} while (currentNode.markedForRemoval);
+
+		if (current == header) {
+			for (int level = 0; level < levels; level++) {
 				AtomicMarkableReference<Node> link = update[level].forward[level];
-				while (! link.compareAndSet(currentNode, currentNode, false, true));
+				link.attemptMark(currentNode, true);
 			}
 			return false;
 		}
@@ -148,22 +160,25 @@ public class SkipList extends AbstractSet<Integer> {
 		if (currentNode.key == searchKey) {
 			currentNode.markedForRemoval = true;
 			for (int level = 0; level < levels; level++) {
-				AtomicMarkableReference<Node> link = update[level].forward[level];
-				Node next;
-				do {
-					next = currentNode.forward[level].getReference();
-				} while (! link.compareAndSet(currentNode, next, false, true));
+				update[level].forward[level] = currentNode.forward[level];
+				if (update[level].forward[level] == null) {
+					update[level].forward[level] = header;
+				}
 			}
 
 			size.decrementAndGet();
 
-			while (levels > 0 && header.getReference().forward[levels] == header) {
+			int oldLevels = levels;
+			while (levels > 1 && header.getReference().forward[levels] == header) {
 				levels = currentLevels.decrementAndGet();
 			}
 
-			for (int level = 0; level <= levels; level++) {
+			for (int level = 0; level < oldLevels; level++) {
 				AtomicMarkableReference<Node> link = update[level].forward[level];
-				while (! link.compareAndSet(currentNode, currentNode, false, true));
+				Node next;
+				do {
+					next = link.getReference();
+				} while (! link.attemptMark(next, true));
 			}
 
 			return true;
@@ -180,7 +195,7 @@ public class SkipList extends AbstractSet<Integer> {
 		int searchKey = (Integer)value;
 		AtomicMarkableReference<Node> current = this.header;
 
-		for (int level = currentLevels.get(); level >= 0; level--) {
+		for (int level = currentLevels.get() - 1; level >= 0; level--) {
 			Node currentNode;
 			do {
 				currentNode = current.getReference();
@@ -220,18 +235,16 @@ public class SkipList extends AbstractSet<Integer> {
 			@Override
 			public boolean hasNext() {
 				// TODO change current here to guarantee it exists
-				return current.getReference().key != Integer.MAX_VALUE;
+				return current.getReference().forward[0].getReference().key != Integer.MAX_VALUE;
 			}
 
 			@Override
 			public Integer next() {
-				Node original = current.getReference();
-				Node currentNode;
+				Node currentNode = current.getReference();
 				do {
-					currentNode = current.getReference();
 					current = currentNode.forward[0];
-				} while (currentNode.key != Integer.MAX_VALUE
-						&& (currentNode == original || currentNode.markedForRemoval));
+					currentNode = current.getReference();
+				} while (current != header && currentNode.markedForRemoval);
 				return currentNode.value;
 			}
 
@@ -245,8 +258,10 @@ public class SkipList extends AbstractSet<Integer> {
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder("[");
-		for (Integer i : this) {
-			s.append(i).append(", ");
+		Iterator<Integer> iter = iterator();
+		while (iter.hasNext()) {
+			s.append(iter.next());
+			if (iter.hasNext()) s.append(", ");
 		}
 		s.append(']');
 		return s.toString();
