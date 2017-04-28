@@ -1,15 +1,15 @@
 # Skip-Lists
 
-\doublespacing
+<!-- \doublespacing -->
 
-\abstract{
-  In concurrent applications with big data, the ability to modify large lists
-  concurrently becomes critical. Using traditional, globally-locked,
-  concurrent data structures we can achieve concurrency but, at the cost of
-  modification speed as the entire structure must be locked during a
-  modification. In this paper we explore creating fine-grained and lock-free
-  skip-lists and compare their performance in the Java library.
-}
+## Abstract
+
+In concurrent applications with big data, the ability to modify large lists
+concurrently becomes critical. Using traditional, globally-locked,
+concurrent data structures we can achieve concurrency but, at the cost of
+modification speed as the entire structure must be locked during a
+modification. In this paper we explore creating fine-grained and lock-free
+skip-lists and compare their performance in the Java library.
 
 <!-- \newpage -->
 
@@ -24,23 +24,24 @@ us a performance improvement as we will not have to perform lock arbitration.
 Fine-grained means that a small subset of the list will block other
 modifications, instead of the entire list blocking.
 
-| Operation        | Linked List      | Binary Tree      | Skip-List           |
-|------------------|------------------|------------------|---------------------|
-| Access           | $\Theta(n)$      | $\Theta(log(n))$ | $\Theta(log(n))$    |
-| Search           | $\Theta(n)$      | $\Theta(log(n))$ | $\Theta(log(n))$    |
-| Insert           | $\Theta(1)$      | $\Theta(log(n))$ | $\Theta(log(n))$    |
-| Remove           | $\Theta(1)$      | $\Theta(log(n))$ | $\Theta(log(n))$    |
-| Space Complexity | $\Theta(n)$      | $\Theta(n)$      | $\Theta(n\:log(n))$ |
-Table: Big-O of Linked List, Binary Tree, and Skip-List
+**Table: Time and Space Complexity of Linked List, Binary Tree, and Skip-List**
+
+| Operation        | Linked List | Binary Tree   | Skip-List       |
+|------------------|-------------|---------------|-----------------|
+| Access           | Θ(_n_)      | Θ(_log_(_n_)) | Θ(_log_(_n_))   |
+| Search           | Θ(_n_)      | Θ(_log_(_n_)) | Θ(_log_(_n_))   |
+| Insert           | Θ(1)        | Θ(_log_(_n_)) | Θ(_log_(_n_))   |
+| Remove           | Θ(1)        | Θ(_log_(_n_)) | Θ(_log_(_n_))   |
+| Space Complexity | Θ(_n_)      | Θ(_n_)        | Θ(_n log_(_n_)) |
 
 In Table 1 we compare the various speeds of linked lists, binary trees, and skip
 lists. Linked lists are slow to access and search as we have to traverse each
 node in the list to get to the next. However, it is very fast to insert and
 remove a given node as we can get right to it and swap the pointers around.
-Binary trees are moderately fast all around, $\Theta(log(n))$, and a good in between
+Binary trees are moderately fast all around, Θ(_log_(_n_)), and a good in between
 in performance of linked list and arrays. However, the entire tree must be blocked
 off during an insert, delete, or modification. When we make a change to node
-$n$, $n$ has a fairly good chance of moving to a different place in the list.
+_n_, _n_ has a fairly good chance of moving to a different place in the list.
 This move forces the rest of the list to rebalance, and would force another
 process to start over from the new tree. A skip-list solves both of these issues
 by making modifications to the list like a linked list, but at the same time
@@ -57,7 +58,7 @@ skip forward various distances in the list, as shown below [1]:
 We implemented the probabilistic skip-list where the insertion of an element has
 some probability _p_ that it will be inserted in the current level vs the next
 one. This allows for a probabilistically even distribution of links such that we
-can obtain $\Theta(log(n))$ insertion time.
+can obtain Θ(_log_(_n_)) insertion time.
 
 ## Design Alternatives
 
@@ -89,7 +90,7 @@ implementation could lock each layer of a node separately. Once a thread finishe
 modification, the thread unlocks all locks belonging to it, allowing other
 threads to acquire those locks or locks passed them.
 This implementation guarantees deadlock freedom; when a thread locks a node with
-a search key $k$ it will never acquire a lock on a node with a search key $>=k$.
+a search key _k_ it will never acquire a lock on a node with a search key ≥_k_.
 From an implementation perspective, this means locks are acquired from the
 lowest layer upwards. Furthermore, concurrent modifications are guaranteed as
 long as there aren't overlapping search key values. It would be more difficult
@@ -106,10 +107,10 @@ different parts of a node at the same time.
 ## Performance Comparison
 
 In figures 3 and 4 in Appendix B, we show the performance of our two implementations as
-compared to Java's built-in $java.util.concurrent.ConcurrentSkipListSet$.
+compared to Java's built-in `java.util.concurrent.ConcurrentSkipListSet`.
 As we can see, we achieve similar performance to Java, with some minor differences.
 For example, we can see that our Fine-grained solution is slower on average than
-a lock-free implementation like java's.
+a lock-free implementation like Java's.
 
 ### Lock-Free
 
@@ -120,14 +121,14 @@ implementation of a skip-list has many edge cases we must consider, as we must
 allow for an insert, delete, and iteration to occur at the same time on the
 same node. We believe our slowdown to be due to our code designed to prevent deadlocks,
 however we still seem to have deadlocks. For the rest of this paper we will use Java's
-implementation as the reference point, as java used a lock-free implementation [2].
+implementation as the reference point, as Java used a lock-free implementation [2].
 
 ### Fine-Grained
 
 The fine-grained implementation performs worse the the built in implementation,
 a lock-free implementation. We see that on average our implementation is slower,
-and seems to have a low $\Theta(n)$ coefficient. Our argument is that all
-operations in a skip-list are $\Theta(log_2(n))$.
+and seems to have a low Θ(_n_) coefficient. Our argument is that all
+operations in a skip-list are Θ(_log_(_n_)).
 
 We examined the performance of the skip-list by varying the number of rows
 modified and the number of threads in contention. From the data we gathered we
@@ -152,16 +153,16 @@ list underperformed when there was little concurrency, but as the number of thre
 operating on the list increased, the performance of our version came very close to the
 ConcurrentSkipListSet.
 
-\newpage
+<!-- \newpage -->
 
-# Bibliography
-[1]    Ticki. (2016). Skip Lists: Done Right. Available: [https://ticki.github.io/blog/skip-lists-done-right/](https://ticki.github.io/blog/skip-lists-done-right/).
-[2]    Pediaview. (2017). Java ConcurrentMap. Available:
+## References
 
- [https://pediaview.com/openpedia/Java_ConcurrentMap](https://pediaview.com/openpedia/Java_ConcurrentMap).
+[1] Ticki. (2016). Skip Lists: Done Right. Available: <https://ticki.github.io/blog/skip-lists-done-right/>.
 
+[2] Pediaview. (2017). Java ConcurrentMap. Available: <https://pediaview.com/openpedia/Java_ConcurrentMap/>.
 
-\newpage
+<!-- \newpage -->
+
 ## Appendix A: Educational Material
 
 ### Skip-List Data Structure
@@ -183,7 +184,7 @@ that the target is not present in a given layer, the search travels down a layer
 in the column of the largest value that is not greater than the target. The
 search continues in the new layer and repeats the process until either the target
 is found or the element is not found in the lowest layer. This type of search and
-structure results in $\Theta(log(n))$ searches.
+structure results in Θ(_log_(_n_)) searches.
 
 As an example, let us search for the element 30 in the above list. First we look
 at the highest level, L3. There are no nodes in this layer yet, so we move to L2.
@@ -198,7 +199,7 @@ next node which is 30 and notice that 30 is greater than 27. Since we are in the
 lowest layer, which includes all elements in the skip-list, we can conclude that
 27 is not in the skip-list.
 
-Adds and removes are extensions of searches (so they are also $\Theta(log(n))$
+Adds and removes are extensions of searches (so they are also Θ(_log_(_n_))
 operations). For the add method, a search is conducted for the value to be added.
 If the target is found, the add returns without modifying the skip-list. If it is
 not found, a node with the target value is added immediately before the first node
@@ -239,6 +240,11 @@ markedForRemoval boolean.
 
 ## Appendix B: Performance Data Graphs
 
+![Remove Random](remove_random_1.png)
+
+![Remove Random 8 Threads](remove_random_8.png)
+
+<!--
 \begin{figure}[H]
   \centering
   \begin{tikzpicture}
@@ -317,3 +323,5 @@ markedForRemoval boolean.
   \label{fig:removeRandom}
   \caption{Remove Random 8 Threads}
 \end{figure}
+
+-->
